@@ -1,0 +1,87 @@
+---
+title: "Figure 1: Pract. Assignment"
+format: pdf
+---
+
+```{r}
+library(tidyverse) 
+library(haven) 
+
+
+#Step 1: Upload data
+PartisanVote <- read_dta(file.path("~/Desktop","cumulative_2006-2024.dta"), col_select = c(pid7, year)) %>% 
+  filter(year >= 2006 & year <= 2024)
+```
+
+```{r}
+  
+#Step 2: recode partisan identity (pid7) "partisan identity".
+
+#recode liberal variables: "Strong Democrat" = 1". "Not Very Strong Democrat" = 2. 
+#recode moderate variables: "Lean Democrat" = 3". "Independent" = 4. "Lean Republican" = 5. 
+#recode conservatives variables: "Not Very Strong Republican" = 6. "Strong Republican" = 7.
+
+```
+
+```{r}
+class(PartisanVote$pid7)
+str(PartisanVote$pid7)
+table(as.numeric(PartisanVote$pid7))
+```
+
+```{r}
+
+# Step 3: Create the 4 groups, tagged by panel
+PartisanVote_Grouped <- PartisanVote %>%
+  mutate(
+    Grouped = case_when(
+      pid7 %in% c(1, 7) ~ "Strong Identifiers",
+      pid7 %in% c(2, 6) ~ "Weak Identifiers",
+      pid7 %in% c(3, 5) ~ "Independent Leaners",
+      pid7 == 4         ~ "Pure Independents"),
+    panel = case_when(
+      pid7 %in% c(1, 2, 6, 7) ~ "Identifiers",
+      pid7 %in% c(3, 4, 5)    ~ "Leaners and Independents"))
+
+# Step 4: Aggregate (one pass, all valid respondents in the denominator)
+PartisanVote_agg <- PartisanVote_Grouped %>%
+  filter(!is.na(Grouped)) %>%
+  count(year, Grouped, panel) %>%
+  group_by(year) %>%
+  mutate(prop = n / sum(n)) %>%
+  ungroup()
+
+
+ggplot(data = PartisanVote_agg, mapping = aes(x = year, y = prop, color = Grouped)) +
+  geom_point(size = 1.2, fill = "white", stroke = 0.5) +
+  geom_line(linewidth = 0.7) +
+  facet_wrap(~ panel, ncol = 1) +
+  theme_bw(base_size = 6) +
+  scale_y_continuous(limits = c(0, 0.5)) +
+  scale_colour_manual(values = c(
+    "Strong Identifiers"  = "black",
+    "Weak Identifiers"    = "grey55",
+    "Independent Leaners" = "black",
+    "Pure Independents"   = "grey55")) +
+  labs(
+    x = "Year",
+    y = "Proportion",
+    title = "Figure 1: The Distribution of Party Identification, 2006-2024",
+    subtitle = "Proportion of National Election Study Sample"
+  ) +
+  theme(
+    legend.position.inside = c(0.18, 0.22),
+    legend.title = element_blank(),
+    legend.background = element_rect(fill = "white", color = "black",
+                                     linewidth = 0.3),
+    panel.grid.major = element_line(linetype = "dotted",
+                                    color = "grey80", linewidth = 0.3),
+    panel.grid.minor = element_blank(),
+    axis.title.x = element_blank(),
+    axis.title.y = element_blank(),
+    plot.title = element_text(hjust = 0.5, size = rel(1.8), face = "bold"),
+    plot.subtitle = element_text(hjust = 0.5, face = "bold"),
+    panel.background = element_rect(fill = "gray99", color = NA),
+    plot.background = element_rect(fill = "white", color = NA))
+```
+

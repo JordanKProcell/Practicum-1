@@ -1,0 +1,50 @@
+---
+title: "Figure 2: Pract. Assignment"
+format: pdf 
+---
+
+```{r}
+library(tidyverse) 
+library(haven) 
+
+PartisanVote_Prop <- read_dta(file.path("~/Desktop", "cumulative_2006-2024.dta"),
+                              col_select = c(pid7, vv_turnout_gvm, year)) %>%
+  filter(year >= 2006 & year <= 2024,
+         pid7 %in% 1:7,
+         vv_turnout_gvm %in% 1:2) %>%
+  mutate(panel = factor(vv_turnout_gvm, 1:2,
+                        c("Voters", "Nonvoters"))) %>%
+  group_by(year, panel) %>%
+  summarise(prop = mean(pid7 %in% c(1, 2, 6, 7)), .groups = "drop")
+
+
+ggplot(PartisanVote_Prop, aes(year, prop, color = panel)) +
+  geom_line(linewidth = .5) +
+  geom_point(aes(shape = panel)) +
+  theme_bw(base_size = 10) +
+  scale_x_continuous(breaks = seq(2006, 2024, 4)) +
+  scale_y_continuous(limits = c(0, 1), breaks = seq(0, 1, 0.1)) +
+  scale_colour_manual(values = c(
+    "Voters"    = "black",
+    "Nonvoters" = "grey55")) +
+  scale_shape_manual(values = c("Voters" = 16, "Nonvoters" = 1)) +
+  labs(
+    x = "Year",
+    y = "Proportion",
+    title = "Figure 2: Party Identification Among Presidential Voters and Nonvoters",
+    subtitle = "Proportion of (Strong or Weak) Identifiers in National Election Study Sample"
+  ) +
+  theme(
+    legend.position.inside = c(0.18, 0.22),
+    legend.title = element_blank(),
+    legend.background = element_rect(fill = "white", color = "black",
+    linewidth = 0.1),
+    axis.title.x = element_blank(),
+    axis.title.y = element_blank(),
+    
+    plot.title = element_text(hjust = 0.5, size = rel(1), face = "bold"),
+    plot.subtitle = element_text(hjust = 0.5, size= 10),
+
+    panel.background = element_rect(fill = "gray99", color = NA),
+    plot.background = element_rect(fill = "white", color = NA))
+```
